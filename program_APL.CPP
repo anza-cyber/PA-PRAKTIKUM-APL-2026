@@ -1,7 +1,46 @@
 #include <iostream>
 #include <iomanip>
+#include <ctime>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
+
+// Fungsi untuk mendapatkan waktu sekarang sebagai string
+string getWaktuSekarang() {
+    time_t now = time(0);
+    struct tm *ltm = localtime(&now);
+
+    // format: DD/MM/YYYY HH:MM:SS
+    char buf[80];
+    sprintf(buf, "%02d/%02d/%04d %02d:%02d:%02d",
+        ltm->tm_mday,
+        ltm->tm_mon + 1,
+        ltm->tm_year + 1900,
+        ltm->tm_hour,
+        ltm->tm_min,
+        ltm->tm_sec);
+    return string(buf);
+}
+
+// Fungsi untuk generate nomor transaksi sederhana
+string generateNoTransaksi() {
+    time_t now = time(0);
+    struct tm *ltm = localtime(&now);
+    char buf[40];
+    sprintf(buf, "TRX%04d%02d%02d%02d%02d%02d",
+        ltm->tm_year + 1900,
+        ltm->tm_mon + 1,
+        ltm->tm_mday,
+        ltm->tm_hour,
+        ltm->tm_min,
+        ltm->tm_sec);
+    return string(buf);
+}
+
+// ===================== FILE CONSTANTS =====================
+const string FILE_PENGGUNA      = "data_pengguna.txt";
+const string FILE_RIWAYAT_LOGIN = "riwayat_login.txt";
 
 struct Harga {
     double satuan;
@@ -39,6 +78,98 @@ Produk   daftarProduk[100];
 
 int jumlahPengguna = 0;
 int totalProduk    = 0;
+
+// ===================== SIMPAN & LOAD PENGGUNA =====================
+
+void simpanPengguna() {
+    ofstream f(FILE_PENGGUNA.c_str());
+    if (!f.is_open()) { cout << "[!] Gagal menyimpan data pengguna.\n"; return; }
+    f << jumlahPengguna << "\n";
+    for (int i = 0; i < jumlahPengguna; i++) {
+        f << dataPengguna[i].nama     << "\n";
+        f << dataPengguna[i].password << "\n";
+        f << dataPengguna[i].role     << "\n";
+        f << dataPengguna[i].aktif    << "\n";
+    }
+    f.close();
+}
+
+void loadPengguna() {
+    ifstream f(FILE_PENGGUNA.c_str());
+    if (!f.is_open()) return; // file belum ada, skip
+
+    int jml = 0;
+    f >> jml;
+    f.ignore();
+
+    for (int i = 0; i < jml && jumlahPengguna < MAKS_PENGGUNA; i++) {
+        string nama, password, role;
+        int aktif = 1;
+
+        getline(f, nama);
+        getline(f, password);
+        getline(f, role);
+        f >> aktif;
+        f.ignore();
+
+        // Skip baris kosong atau data tidak valid
+        if (nama.empty() || password.empty() || role.empty()) continue;
+
+        // Skip duplikat
+        int duplikat = 0;
+        for (int j = 0; j < jumlahPengguna; j++)
+            if (dataPengguna[j].nama == nama) { duplikat = 1; break; }
+        if (duplikat) continue;
+
+        dataPengguna[jumlahPengguna].nama     = nama;
+        dataPengguna[jumlahPengguna].password = password;
+        dataPengguna[jumlahPengguna].role     = role;
+        dataPengguna[jumlahPengguna].aktif    = aktif;
+        jumlahPengguna++;
+    }
+    f.close();
+}
+
+// ===================== RIWAYAT LOGIN =====================
+
+void simpanRiwayatLogin(string namaUser, string role, string status) {
+    ofstream f(FILE_RIWAYAT_LOGIN.c_str(), ios::app); // append mode
+    if (!f.is_open()) return;
+    f << getWaktuSekarang() << "|" << namaUser << "|" << role << "|" << status << "\n";
+    f.close();
+}
+
+void tampilRiwayatLogin() {
+    ifstream f(FILE_RIWAYAT_LOGIN.c_str());
+    if (!f.is_open()) { cout << "Belum ada riwayat login.\n"; return; }
+
+    cout << "\n+---------------------+------------------+-------------+----------+\n";
+    cout << "| Waktu               | Nama             | Role        | Status   |\n";
+    cout << "+---------------------+------------------+-------------+----------+\n";
+
+    string baris;
+    int ada = 0;
+    while (getline(f, baris)) {
+        // parse: waktu|nama|role|status
+        string kolom[4];
+        int k = 0;
+        string tmp = "";
+        for (int i = 0; i < (int)baris.size(); i++) {
+            if (baris[i] == '|' && k < 3) { kolom[k++] = tmp; tmp = ""; }
+            else tmp += baris[i];
+        }
+        kolom[k] = tmp;
+        cout << "| " << left << setw(20) << kolom[0]
+             << "| " << setw(17) << kolom[1]
+             << "| " << setw(12) << kolom[2]
+             << "| " << setw(9)  << kolom[3] << "|\n";
+        ada = 1;
+    }
+    if (!ada)
+        cout << "|              (belum ada riwayat login)                    |\n";
+    cout << "+---------------------+------------------+-------------+----------+\n";
+    f.close();
+}
 
 void menuAdmin(string namaUser);
 void menuPelanggan(string namaUser);
@@ -81,6 +212,7 @@ double bacaHarga(string s) {
     for (int i = 0; i < (int)s.size(); i++) h = h * 10 + (s[i] - '0');
     return h;
 }
+
 
 // TAMPILAN
 
@@ -314,7 +446,6 @@ void tampilPerMerek(string merek) {
         if (daftarProduk[i].aktif == 0) continue;
         string merkData = daftarProduk[i].merk;
         string merkCari = merek;
-        // lowercase keduanya buat compare
         for (int j = 0; j < (int)merkData.size(); j++) merkData[j] = tolower(merkData[j]);
         for (int j = 0; j < (int)merkCari.size(); j++) merkCari[j] = tolower(merkCari[j]);
         if (merkData != merkCari) continue;
@@ -412,7 +543,6 @@ void cariHarga() {
 
     if (jml == 0) { cout << "Belum ada produk.\n"; return; }
 
-    // selection sort dulu biar bisa binary search
     selectionSortHargaAsc(tmp, jml);
 
     string inputHarga;
@@ -423,7 +553,6 @@ void cariHarga() {
 
     double target = bacaHarga(inputHarga);
 
-    // binary search
     int low = 0, high = jml - 1, posisi = -1;
     while (low <= high) {
         int mid = low + (high - low) / 2;
@@ -525,7 +654,6 @@ void menuKeranjang(string namaUser) {
         getline(cin, pilihan);
 
         if (pilihan == "1") {
-            // tambah ke keranjang
             int adaStok = 0;
             for (int i = 0; i < totalProduk; i++)
                 if (daftarProduk[i].aktif == 1 && daftarProduk[i].stok.jumlah > 0) { adaStok = 1; break; }
@@ -533,7 +661,6 @@ void menuKeranjang(string namaUser) {
             if (adaStok == 0) { cout << "Semua produk lagi habis nih...\n"; continue; }
             if (jmlKeranjang >= MAKS_KERANJANG) { cout << "Keranjang udah penuh!\n"; continue; }
 
-            // tampil produk yang ada stok
             int peta[100], no = 0;
             cout << "\n+----+----------------------+------------------+----------------+---------+--------------+\n";
             cout << "| No | Nama Produk          | Merk             | Harga          | Stok    | Jenis        |\n";
@@ -562,7 +689,6 @@ void menuKeranjang(string namaUser) {
             int idx = peta[bacaAngka(pilihanProduk) - 1];
             Produk &p = daftarProduk[idx];
 
-            // hitung stok yang sudah ada di keranjang
             int stokDiKeranjang = 0;
             for (int i = 0; i < jmlKeranjang; i++)
                 if (keranjang[i].idxProduk == idx)
@@ -585,7 +711,6 @@ void menuKeranjang(string namaUser) {
                 cout << "Jumlahnya melebihi stok yang tersedia (" << stokTersedia << ")!\n"; continue;
             }
 
-            // cek kalau produk sudah ada di keranjang, update jumlahnya aja
             int sudahAda = 0;
             for (int i = 0; i < jmlKeranjang; i++) {
                 if (keranjang[i].idxProduk == idx) {
@@ -603,12 +728,10 @@ void menuKeranjang(string namaUser) {
             cout << p.nama << " x" << jml << " berhasil ditambahkan ke keranjang!\n";
 
         } else if (pilihan == "2") {
-            // lihat keranjang
             if (jmlKeranjang == 0) { cout << "Keranjang masih kosong nih...\n"; continue; }
             tampilKeranjang(keranjang, jmlKeranjang);
 
         } else if (pilihan == "3") {
-            // hapus dari keranjang
             if (jmlKeranjang == 0) { cout << "Keranjang masih kosong!\n"; continue; }
 
             tampilKeranjang(keranjang, jmlKeranjang);
@@ -644,20 +767,79 @@ void menuKeranjang(string namaUser) {
                 cout << "Checkout dibatalkan.\n"; continue;
             }
 
-            // kurangi stok
-            for (int i = 0; i < jmlKeranjang; i++)
-                kurangiStok(&daftarProduk[keranjang[i].idxProduk].stok.jumlah, keranjang[i].jumlah);
+            // ===== PILIH METODE PEMBAYARAN =====
+            string metodePembayaran = "";
+            string statusPembayaran = "";
+            string pilihanMetode;
+            double jumlahBayar  = 0;
+            double kembalian    = 0;
+            int    adaKembalian = 0;
 
-            // hitung total
+            cout << "\n--- Pilih Metode Pembayaran ---\n";
+            cout << "  [1] Tunai (Cash)\n";
+            cout << "  [2] Transfer Bank\n";
+            cout << "  [3] QRIS\n";
+            cout << "  [4] Kartu Debit/Kredit\n";
+            cout << "Pilih metode: ";
+            getline(cin, pilihanMetode);
+
+            // hitung total dulu buat validasi tunai
             double grandTotal = 0;
             for (int i = 0; i < jmlKeranjang; i++)
                 grandTotal += daftarProduk[keranjang[i].idxProduk].harga.satuan * keranjang[i].jumlah;
 
-            // struk
+            if (pilihanMetode == "1") {
+                metodePembayaran = "Tunai (Cash)";
+
+                string inputBayar;
+                cout << "Jumlah uang yang dibayar (Rp): ";
+                getline(cin, inputBayar);
+
+                if (validAngka(inputBayar) == 0) {
+                    cout << "Jumlah bayar gak valid! Checkout dibatalkan.\n";
+                    continue;
+                }
+
+                jumlahBayar = bacaHarga(inputBayar);
+                if (jumlahBayar < grandTotal) {
+                    cout << "Uang kurang " << rupiahFormat(grandTotal - jumlahBayar) << "! Pembayaran gagal.\n";
+                    cout << "Checkout dibatalkan.\n";
+                    continue;
+                }
+
+                kembalian    = jumlahBayar - grandTotal;
+                adaKembalian = 1;
+                statusPembayaran = "LUNAS";
+
+            } else if (pilihanMetode == "2") {
+                metodePembayaran = "Transfer Bank";
+                statusPembayaran  = "LUNAS (Transfer Dikonfirmasi)";
+            } else if (pilihanMetode == "3") {
+                metodePembayaran = "QRIS";
+                statusPembayaran  = "LUNAS (QRIS Berhasil)";
+            } else if (pilihanMetode == "4") {
+                metodePembayaran = "Kartu Debit/Kredit";
+                statusPembayaran  = "LUNAS (Kartu Approved)";
+            } else {
+                metodePembayaran = "Tidak Diketahui";
+                statusPembayaran  = "LUNAS";
+            }
+
+            // Ambil waktu transaksi
+            string waktuTransaksi = getWaktuSekarang();
+            string noTransaksi    = generateNoTransaksi();
+
+            // kurangi stok
+            for (int i = 0; i < jmlKeranjang; i++)
+                kurangiStok(&daftarProduk[keranjang[i].idxProduk].stok.jumlah, keranjang[i].jumlah);
+
+            // ===== STRUK DENGAN WAKTU & STATUS PEMBAYARAN =====
             cout << "\n\n";
             cout << "  ================================================\n";
             cout << "         STRUK PEMBELIAN - TOKO SKINCARE\n";
             cout << "  ================================================\n";
+            cout << "  No. Transaksi  : " << noTransaksi << "\n";
+            cout << "  Waktu          : " << waktuTransaksi << "\n";
             cout << "  Nama Pelanggan : " << namaUser << "\n";
             cout << "  ------------------------------------------------\n";
             for (int i = 0; i < jmlKeranjang; i++) {
@@ -669,8 +851,15 @@ void menuKeranjang(string namaUser) {
             }
             cout << "  ------------------------------------------------\n";
             cout << "  TOTAL          : " << rupiahFormat(grandTotal) << "\n";
+            if (adaKembalian == 1) {
+                cout << "  Dibayar        : " << rupiahFormat(jumlahBayar) << "\n";
+                cout << "  Kembalian      : " << rupiahFormat(kembalian)   << "\n";
+            }
+            cout << "  ------------------------------------------------\n";
+            cout << "  Metode Bayar   : " << metodePembayaran << "\n";
+            cout << "  Status         : " << statusPembayaran << "\n";
             cout << "  ================================================\n";
-            cout << "  Makasih udah belanja! Semoga cocok ya :\n";
+            cout << "  Makasih udah belanja! Semoga cocok ya :)\n";
             cout << "  ================================================\n\n";
 
             // kosongkan keranjang
@@ -709,6 +898,7 @@ void doRegister() {
     dataPengguna[jumlahPengguna].aktif    = 1;
     jumlahPengguna++;
 
+    simpanPengguna();
     cout << "\nAkun '" << nama << "' berhasil dibuat sebagai pelanggan!\n";
 }
 
@@ -733,6 +923,7 @@ int doLogin(Pengguna* data, int jml) {
 
         if (ketemu != -1) {
             cout << "\nLogin berhasil! Hai " << data[ketemu].nama << " :)\n";
+            simpanRiwayatLogin(data[ketemu].nama, data[ketemu].role, "BERHASIL");
             if (data[ketemu].role == "admin")
                 menuAdmin(data[ketemu].nama);
             else
@@ -741,6 +932,7 @@ int doLogin(Pengguna* data, int jml) {
         }
 
         coba++;
+        simpanRiwayatLogin(inputNama, "-", "GAGAL");
         cout << "\nLogin gagal. Nama atau password salah.\n";
         if (coba < 3) cout << "Sisa percobaan: " << (3 - coba) << "\n";
     }
@@ -764,9 +956,10 @@ void menuAdmin(string namaUser) {
         cout << "  [4] Hapus Produk\n";
         cout << "  [5] Urutkan Data Produk\n";
         cout << "  [6] Cari Produk\n";
+        cout << "  [7] Riwayat Login\n";
         cout << "  [0] Logout\n";
         cout << "==================================================\n";
-        cout << "  Mau ngapain? (0-6): ";
+        cout << "  Mau ngapain? (0-7): ";
         getline(cin, pilihan);
 
         if      (pilihan == "1") tambahProduk();
@@ -775,6 +968,7 @@ void menuAdmin(string namaUser) {
         else if (pilihan == "4") hapusProduk();
         else if (pilihan == "5") menuSorting();
         else if (pilihan == "6") menuCari();
+        else if (pilihan == "7") { cout << "\n--- Riwayat Login ---\n"; tampilRiwayatLogin(); }
         else if (pilihan == "0") { cout << "Sampai jumpa! BYE BYE\n"; return; }
         else cout << "Pilihan gak valid, coba lagi dong...\n";
     }
@@ -808,44 +1002,51 @@ void menuPelanggan(string namaUser) {
 }
 
 int main() {
-    // data awal pengguna
-    dataPengguna[jumlahPengguna].nama     = "admin";
-    dataPengguna[jumlahPengguna].password = "123";
-    dataPengguna[jumlahPengguna].role     = "admin";
-    dataPengguna[jumlahPengguna].aktif    = 1;
-    jumlahPengguna++;
+    // Load data pengguna dari file (kalau ada)
+    loadPengguna();
 
-    dataPengguna[jumlahPengguna].nama     = "Tamu";
-    dataPengguna[jumlahPengguna].password = "000";
-    dataPengguna[jumlahPengguna].role     = "pelanggan";
-    dataPengguna[jumlahPengguna].aktif    = 1;
-    jumlahPengguna++;
+    // Kalau file kosong / belum ada, isi data default
+    int adminAda = 0, tamuAda = 0;
+    for (int i = 0; i < jumlahPengguna; i++) {
+        if (dataPengguna[i].nama == "admin") adminAda = 1;
+        if (dataPengguna[i].nama == "Tamu")  tamuAda  = 1;
+    }
 
-    // data awal produk - Wardah
+    if (adminAda == 0) {
+        dataPengguna[jumlahPengguna].nama     = "admin";
+        dataPengguna[jumlahPengguna].password = "123";
+        dataPengguna[jumlahPengguna].role     = "admin";
+        dataPengguna[jumlahPengguna].aktif    = 1;
+        jumlahPengguna++;
+    }
+    if (tamuAda == 0) {
+        dataPengguna[jumlahPengguna].nama     = "Tamu";
+        dataPengguna[jumlahPengguna].password = "000";
+        dataPengguna[jumlahPengguna].role     = "pelanggan";
+        dataPengguna[jumlahPengguna].aktif    = 1;
+        jumlahPengguna++;
+    }
+
     daftarProduk[totalProduk] = {"Lightening Serum", "Wardah", {55000, "IDR"}, {40, "pcs"}, "Serum", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"UV Shield Sunscreen", "Wardah", {48000, "IDR"}, {35, "pcs"}, "Sunscreen", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Hydrating Toner", "Wardah", {38000, "IDR"}, {30, "pcs"}, "Toner", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Face Wash Aloe", "Wardah", {30000, "IDR"}, {25, "pcs"}, "Face Wash", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Daily Moisturizer", "Wardah", {52000, "IDR"}, {20, "pcs"}, "Moisturizer", 1}; totalProduk++;
-    // Glad2Glow
     daftarProduk[totalProduk] = {"Brightening Serum", "Glad2Glow", {62000, "IDR"}, {25, "pcs"}, "Serum", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Exfo Toner AHA BHA", "Glad2Glow", {57000, "IDR"}, {20, "pcs"}, "Toner", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Moisturizer Gel", "Glad2Glow", {45000, "IDR"}, {30, "pcs"}, "Moisturizer", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Gentle Face Wash", "Glad2Glow", {35000, "IDR"}, {20, "pcs"}, "Face Wash", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Hydra Moisturizer", "Glad2Glow", {50000, "IDR"}, {18, "pcs"}, "Moisturizer", 1}; totalProduk++;
-    // Emina
     daftarProduk[totalProduk] = {"Sun Protection SPF30", "Emina", {40000, "IDR"}, {50, "pcs"}, "Sunscreen", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Bright Stuff Toner", "Emina", {35000, "IDR"}, {45, "pcs"}, "Toner", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Acne Care Serum", "Emina", {42000, "IDR"}, {28, "pcs"}, "Serum", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Bright Stuff Face Wash", "Emina", {28000, "IDR"}, {40, "pcs"}, "Face Wash", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Ms Pimple Moisturizer", "Emina", {36000, "IDR"}, {30, "pcs"}, "Moisturizer", 1}; totalProduk++;
-    // Originote
     daftarProduk[totalProduk] = {"Hyalucera Moisturizer", "Originote", {75000, "IDR"}, {22, "pcs"}, "Moisturizer", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Ceramide Cleanser", "Originote", {68000, "IDR"}, {18, "pcs"}, "Cleanser", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Niacinamide Serum", "Originote", {72000, "IDR"}, {20, "pcs"}, "Serum", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Mild Cleanser Face Wash", "Originote", {60000, "IDR"}, {15, "pcs"}, "Face Wash", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Barrier Moisturizer", "Originote", {80000, "IDR"}, {12, "pcs"}, "Moisturizer", 1}; totalProduk++;
-    // Skintific
     daftarProduk[totalProduk] = {"5x Ceramide Barrier", "Skintific", {115000, "IDR"}, {15, "pcs"}, "Moisturizer", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"SymWhite Serum", "Skintific", {125000, "IDR"}, {12, "pcs"}, "Serum", 1}; totalProduk++;
     daftarProduk[totalProduk] = {"Mugwort Clay Mask", "Skintific", {98000, "IDR"}, {18, "pcs"}, "Mask", 1}; totalProduk++;
