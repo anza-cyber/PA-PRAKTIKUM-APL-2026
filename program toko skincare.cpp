@@ -203,7 +203,7 @@ double bacaHarga(string s) {
 
 int tampilTabel(int stockOnly) {
     cout << "\n+-----+---------------------------+-------------+----------------+------+--------------+\n";
-    cout << "| No  | Nama Produk               | Merk        | Harga          | Stok | Jenis        |\n";
+    cout << "| No  | Nama Produk               | Merk         | Harga          | Stok | Jenis        |\n";
     cout << "+-----+---------------------------+-------------+----------------+------+--------------+\n";
 
     int no = 0, adaData = 0;
@@ -281,7 +281,7 @@ void tampilDenganSorting(int mode) {
     else if (mode == 3) insertionSortStokAsc(tmp, jml);
 
     cout << "\n+-----+---------------------------+-------------+----------------+------+--------------+\n";
-    cout << "| No  | Nama Produk               | Merk        | Harga          | Stok | Jenis        |\n";
+    cout << "| No  | Nama Produk               | Merk         | Harga          | Stok | Jenis        |\n";
     cout << "+-----+---------------------------+-------------+----------------+------+--------------+\n";
     for (int i = 0; i < jml; i++) {
         string nama = tmp[i].nama;
@@ -445,7 +445,7 @@ void cariNama() {
         keyword[i] = tolower(keyword[i]);
 
     cout << "\n+-----+-------------------------+------------------+----------------+-------+--------------+\n";
-    cout << "| No  | Nama Produk             | Merk             | Harga          | Stok  | Jenis        |\n";
+    cout << "| No  | Nama Produk             | Merk              | Harga          | Stok  | Jenis        |\n";
     cout << "+-----+-------------------------+------------------+----------------+-------+--------------+\n";
 
     int ketemu = 0;
@@ -514,7 +514,7 @@ void cariHarga() {
 
         cout << "\nBerikut produk dengan harga terdekat (" << rupiahFormat(hargaTerdekat) << "):\n";
         cout << "\n+-----+-------------------------+------------------+----------------+-------+--------------+\n";
-        cout << "| No  | Nama Produk             | Merk             | Harga          | Stok  | Jenis        |\n";
+        cout << "| No  | Nama Produk             | Merk              | Harga          | Stok  | Jenis        |\n";
         cout << "+-----+-------------------------+------------------+----------------+-------+--------------+\n";
         int no = 0;
         for (int i = 0; i < jml; i++) {
@@ -533,7 +533,7 @@ void cariHarga() {
     }
 
     cout << "\n+-----+-------------------------+------------------+----------------+-------+--------------+\n";
-    cout << "| No  | Nama Produk             | Merk             | Harga          | Stok  | Jenis        |\n";
+    cout << "| No  | Nama Produk             | Merk              | Harga          | Stok  | Jenis        |\n";
     cout << "+-----+-------------------------+------------------+----------------+-------+--------------+\n";
     int no = 0;
     for (int i = 0; i < jml; i++) {
@@ -598,15 +598,15 @@ void kurangiStok(int *stokPtr, int jumlah) {
     *stokPtr -= jumlah;
 }
 
-// ===================== TAMPIL PRODUK PER MEREK + SORTING =====================
+// ===================== TAMPIL PRODUK PER MERK + SORTING =====================
 // [DIMODIFIKASI] Fungsi ini sekarang menerima parameter modeSort:
 //   0 = tanpa sorting (urutan default)
 //   1 = Bubble Sort  : Nama Z -> A
 //   2 = Selection Sort: Harga Termurah -> Termahal
 //   3 = Insertion Sort: Stok Sedikit -> Terbanyak
 
-int tampilProdukMerek(string merek, int peta[], int modeSort) {
-    // Kumpulkan produk sesuai merek ke array sementara
+int tampilProdukMerk(string merk, int peta[], int modeSort) {
+    // Kumpulkan produk sesuai merk ke array sementara
     Produk tmp[100];
     int    idxAsli[100];
     int    jml = 0;
@@ -615,7 +615,7 @@ int tampilProdukMerek(string merek, int peta[], int modeSort) {
         if (daftarProduk[i].aktif == 0) continue;
 
         string merkData = daftarProduk[i].merk;
-        string merkCari = merek;
+        string merkCari = merk;
         for (int j = 0; j < (int)merkData.size(); j++) merkData[j] = tolower(merkData[j]);
         for (int j = 0; j < (int)merkCari.size(); j++) merkCari[j] = tolower(merkCari[j]);
         if (merkData != merkCari) continue;
@@ -643,24 +643,24 @@ int tampilProdukMerek(string merek, int peta[], int modeSort) {
         }
     }
 
-    // Tampilkan header merek
+    // Tampilkan header merk
     cout << "\n";
     cout << "  +-------------------------------------------------+\n";
-    cout << "  |         KATALOG MEREK: ";
-    string judulMerek = merek;
-    int pad = 25 - (int)judulMerek.size();
-    cout << judulMerek;
+    cout << "  |         KATALOG MERK: ";
+    string judulMerk = merk;
+    int pad = 25 - (int)judulMerk.size();
+    cout << judulMerk;
     for (int i = 0; i < pad; i++) cout << " ";
     cout << "|\n";
     cout << "  +-------------------------------------------------+\n";
 
     // Tampilkan label sorting yang aktif
     if (modeSort == 1)
-        cout << "  [ Diurutkan: Nama Z -> A (Bubble Sort) ]\n";
+        cout << "  [ Diurutkan: Nama Z -> A ]\n";
     else if (modeSort == 2)
-        cout << "  [ Diurutkan: Harga Termurah -> Termahal (Selection Sort) ]\n";
+        cout << "  [ Diurutkan: Harga Termurah -> Termahal ]\n";
     else if (modeSort == 3)
-        cout << "  [ Diurutkan: Stok Sedikit -> Terbanyak (Insertion Sort) ]\n";
+        cout << "  [ Diurutkan: Stok Sedikit -> Terbanyak ]\n";
     else
         cout << "  [ Urutan: Default ]\n";
 
@@ -678,14 +678,14 @@ int tampilProdukMerek(string merek, int peta[], int modeSort) {
              << "| " << setw(13) << tmp[i].jenis << "|\n";
     }
     if (jml == 0)
-        cout << "|         (belum ada produk untuk merek ini)                      |\n";
+        cout << "|         (belum ada produk untuk merk ini)                      |\n";
     cout << "+-----+-------------------------+----------------+-------+--------------+\n";
 
     return jml;
 }
 
 // ===================== MENU SORTING UNTUK PELANGGAN =====================
-// [BARU] Muncul sebelum menu merek, pelanggan memilih mode sorting
+// [BARU] Muncul sebelum menu merk, pelanggan memilih mode sorting
 // Return: mode sorting yang dipilih (0-3)
 
 int menuSortingPelanggan() {
@@ -694,11 +694,11 @@ int menuSortingPelanggan() {
         cout << "\n==================================================\n";
         cout << "     PILIH URUTAN TAMPILAN PRODUK\n";
         cout << "==================================================\n";
-        cout << "  Produk di setiap merek akan ditampilkan\n";
+        cout << "  Produk di setiap merk akan ditampilkan\n";
         cout << "  sesuai urutan yang kamu pilih di bawah ini:\n\n";
-        cout << "  [1] Nama        : Z -> A          (Bubble Sort)\n";
-        cout << "  [2] Harga       : Termurah -> Termahal  (Selection Sort)\n";
-        cout << "  [3] Stok        : Sedikit -> Terbanyak  (Insertion Sort)\n";
+        cout << "  [1] Nama        : Z -> A\n";
+        cout << "  [2] Harga       : Termurah -> Termahal\n";
+        cout << "  [3] Stok        : Sedikit -> Terbanyak\n";
         cout << "  [0] Tanpa Urutan (Default)\n";
         cout << "==================================================\n";
         cout << "Pilih urutan: ";
@@ -722,7 +722,7 @@ int menuSortingPelanggan() {
     }
 }
 
-void tambahKeKeranjangDariMerek(ItemKeranjang keranjang[], int &jmlKeranjang,
+void tambahKeKeranjangDariMerk(ItemKeranjang keranjang[], int &jmlKeranjang,
                                  int peta[], int no) {
     if (jmlKeranjang >= MAKS_KERANJANG) {
         cout << "Keranjang udah penuh!\n";
@@ -884,10 +884,10 @@ void prosesCheckout(ItemKeranjang keranjang[], int &jmlKeranjang, string namaUse
     jmlKeranjang = 0;
 }
 
-// ===================== MENU MEREK + KERANJANG =====================
-// [DIMODIFIKASI] Sekarang meminta pilihan sorting SEBELUM masuk menu merek
+// ===================== MENU MERK + KERANJANG =====================
+// [DIMODIFIKASI] Sekarang meminta pilihan sorting SEBELUM masuk menu merk
 
-void menuMerekDanKeranjang(string namaUser) {
+void menuMerkDanKeranjang(string namaUser) {
     ItemKeranjang keranjang[50];
     int jmlKeranjang = 0;
 
@@ -895,7 +895,7 @@ void menuMerekDanKeranjang(string namaUser) {
     int modeSort = menuSortingPelanggan();
     // -------------------------------------------------------
 
-    string merekAktif = "";
+    string merkAktif = "";
     int peta[100];
     int noProduk = 0;
 
@@ -903,7 +903,7 @@ void menuMerekDanKeranjang(string namaUser) {
 
     while (true) {
         cout << "\n==================================================\n";
-        cout << "       PILIH MEREK SKINCARE & KERANJANG\n";
+        cout << "         PILIH MERK SKINCARE & KERANJANG\n";
         cout << "==================================================\n";
 
         // Tampilkan info mode sorting aktif
@@ -913,13 +913,13 @@ void menuMerekDanKeranjang(string namaUser) {
         else if (modeSort == 3) cout << "Stok Sedikit -> Terbanyak\n";
         else                    cout << "Default\n";
 
-        if (merekAktif != "")
-            cout << "  Merek aktif  : " << merekAktif
+        if (merkAktif != "")
+            cout << "  Merk aktif  : " << merkAktif
                  << " (" << noProduk << " produk)\n";
 
         cout << "  Isi keranjang: " << jmlKeranjang << " item\n\n";
 
-        cout << "  --- Pilih Merek ---\n";
+        cout << "  --- Pilih Merk ---\n";
         cout << "  [1] Wardah\n";
         cout << "  [2] Glad2Glow\n";
         cout << "  [3] Emina\n";
@@ -940,18 +940,18 @@ void menuMerekDanKeranjang(string namaUser) {
         cout << "Pilih: ";
         getline(cin, pilihan);
 
-        string merekBaru = "";
+        string merkBaru = "";
 
-        if      (pilihan == "1") merekBaru = "Wardah";
-        else if (pilihan == "2") merekBaru = "Glad2Glow";
-        else if (pilihan == "3") merekBaru = "Emina";
-        else if (pilihan == "4") merekBaru = "Originote";
-        else if (pilihan == "5") merekBaru = "Skintific";
+        if      (pilihan == "1") merkBaru = "Wardah";
+        else if (pilihan == "2") merkBaru = "Glad2Glow";
+        else if (pilihan == "3") merkBaru = "Emina";
+        else if (pilihan == "4") merkBaru = "Originote";
+        else if (pilihan == "5") merkBaru = "Skintific";
 
-        if (merekBaru != "") {
-            merekAktif = merekBaru;
-            // [DIMODIFIKASI] Kirim modeSort ke tampilProdukMerek
-            noProduk = tampilProdukMerek(merekAktif, peta, modeSort);
+        if (merkBaru != "") {
+            merkAktif = merkBaru;
+            // [DIMODIFIKASI] Kirim modeSort ke tampilProdukMerk
+            noProduk = tampilProdukMerk(merkAktif, peta, modeSort);
 
             if (noProduk > 0) {
                 string tanya;
@@ -963,7 +963,7 @@ void menuMerekDanKeranjang(string namaUser) {
                 }
 
                 if (tanya == "y" || tanya == "Y") {
-                    tambahKeKeranjangDariMerek(keranjang, jmlKeranjang, peta, noProduk);
+                    tambahKeKeranjangDariMerk(keranjang, jmlKeranjang, peta, noProduk);
                 }
             }
             continue;
@@ -1010,10 +1010,10 @@ void menuMerekDanKeranjang(string namaUser) {
         // [BARU] Opsi [9] ganti sorting tanpa keluar
         if (pilihan == "9") {
             modeSort = menuSortingPelanggan();
-            // Kalau ada merek aktif, refresh tampilannya langsung
-            if (merekAktif != "") {
-                cout << "\nMemperbarui tampilan " << merekAktif << "...\n";
-                noProduk = tampilProdukMerek(merekAktif, peta, modeSort);
+            // Kalau ada merk aktif, refresh tampilannya langsung
+            if (merkAktif != "") {
+                cout << "\nMemperbarui tampilan " << merkAktif << "...\n";
+                noProduk = tampilProdukMerk(merkAktif, peta, modeSort);
             }
             continue;
         }
@@ -1132,14 +1132,14 @@ void menuPelanggan(string namaUser) {
         cout << "        TOKO SKINCARE - PELANGGAN\n";
         cout << "==================================================\n";
         cout << "  Halo, " << namaUser << "!\n\n";
-        cout << "  [1] Pilih Merek Skincare\n";
+        cout << "  [1] Pilih Merk Skincare\n";
         cout << "  [2] Cari Produk\n";
         cout << "  [0] Keluar\n";
         cout << "==================================================\n";
         cout << "  Mau apa? (0-3): ";
         getline(cin, pilihan);
 
-        if      (pilihan == "1") menuMerekDanKeranjang(namaUser);
+        if      (pilihan == "1") menuMerkDanKeranjang(namaUser);
         else if (pilihan == "2") menuCari();
         else if (pilihan == "0") { cout << "Makasih udah mampir! Sampai jumpa lagi ya :)\n"; return; }
         else cout << "Pilihan gak valid...\n";
