@@ -4,10 +4,11 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <cctype>  
 
 using namespace std;
 
-// ===================== ANSI COLOR CODES =====================
+// ANSI COLOR CODES
 #define RESET       "\033[0m"
 #define BOLD        "\033[1m"
 #define BRED        "\033[91m"
@@ -22,30 +23,34 @@ using namespace std;
 #define BG_BLUE     "\033[44m"
 #define BG_BLACK    "\033[40m"
 
-// ===================== HELPER TAMPILAN =====================
-// Lebar standar semua kotak = 52 karakter isi + 2 border = 54
+// WARNA HARGA
+#define BHARGA      "\033[93m"   // BYELLOW — dipakai di SEMUA tampilan harga
 
-void cetakGaris(string warna, int panjang = 54) {
+// LEBAR KOLOM PRODUK
+#define TBL_SEP "+-----+-------------------------+-------------+-----------------+-------+---------------+"
+#define TBL_HDR "| %-3s | %-23s | %-11s | %-15s | %-5s | %-13s |\n"
+#define TBL_ROW "| %s%-3d%s | %s%-23s%s | %s%-11s%s | %s%-15s%s | %s%-5d%s | %s%-13s%s |\n"
+
+// TAMPILAN
+void cetakGaris(string warna, int panjang = 56) {
     cout << warna;
     for (int i = 0; i < panjang; i++) cout << "=";
     cout << RESET << "\n";
 }
 
-void cetakGarisTipis(string warna, int panjang = 54) {
+void cetakGarisTipis(string warna, int panjang = 56) {
     cout << warna;
     for (int i = 0; i < panjang; i++) cout << "-";
     cout << RESET << "\n";
 }
 
-// Cetak baris teks di dalam kotak, lebar isi = panjang-2
-void cetakBaris(string warna, string teks, int panjang = 54) {
+void cetakBaris(string warna, string teks, int panjang = 56) {
     int isi = panjang - 2;
     cout << warna << "| " << RESET << left << setw(isi - 2) << teks << warna << " |" << RESET << "\n";
 }
 
-// Cetak judul tengah di dalam kotak
-void cetakTengah(string bgWarna, string teksWarna, string teks, int panjang = 54) {
-    int isi = panjang - 2; // ruang dalam border
+void cetakTengah(string bgWarna, string teksWarna, string teks, int panjang = 56) {
+    int isi = panjang - 2;
     int pad = (isi - (int)teks.size()) / 2;
     if (pad < 0) pad = 0;
     int padKanan = isi - (int)teks.size() - pad;
@@ -57,14 +62,13 @@ void cetakTengah(string bgWarna, string teksWarna, string teks, int panjang = 54
     cout << "|" << RESET << "\n";
 }
 
-void cetakHeader(string judul, string warna, int panjang = 54) {
+void cetakHeader(string judul, string warna, int panjang = 56) {
     cetakGaris(warna, panjang);
     cetakTengah(warna, BWHITE, judul, panjang);
     cetakGaris(warna, panjang);
 }
 
-// ===================== WAKTU & TRANSAKSI =====================
-
+// WAKTU & TRANSAKSI
 string getWaktuSekarang() {
     time_t now = time(0);
     struct tm *ltm = localtime(&now);
@@ -115,8 +119,7 @@ Produk   daftarProduk[100];
 int jumlahPengguna = 0;
 int totalProduk    = 0;
 
-// ===================== SIMPAN & LOAD PENGGUNA =====================
-
+// SIMPAN & LOAD PENGGUNA
 void simpanPengguna() {
     try {
         ofstream f(FILE_PENGGUNA.c_str());
@@ -156,8 +159,7 @@ void loadPengguna() {
     }
 }
 
-// ===================== RIWAYAT LOGIN =====================
-
+// RIWAYAT LOGIN
 void simpanRiwayatLogin(string namaUser, string role, string status) {
     try {
         ofstream f(FILE_RIWAYAT_LOGIN.c_str(), ios::app);
@@ -169,16 +171,24 @@ void simpanRiwayatLogin(string namaUser, string role, string status) {
     }
 }
 
+// TABEL RIWAYAT LOGIN
+#define LOG_SEP "+---------------------+------------------+-------------+----------+"
+#define LOG_HDR "| %-20s | %-17s | %-12s | %-9s|\n"
+#define LOG_ROW "| %-20s | %-17s | %s%-12s%s | %s%-9s%s|\n"
+
 void tampilRiwayatLogin() {
     try {
         ifstream f(FILE_RIWAYAT_LOGIN.c_str());
         if (!f.is_open()) throw runtime_error("File riwayat login tidak ditemukan.");
-        cout << BCYAN << "+---------------------+-----------------+------------+----------+\n";
-        cout << "| " << BYELLOW << "Waktu               " << BCYAN
-             << "| " << BGREEN  << "Nama            " << BCYAN
-             << "| " << BMAGENTA<< "Role       " << BCYAN
-             << "| " << BWHITE  << "Status   " << BCYAN << "|\n";
-        cout << "+---------------------+-----------------+------------+----------+\n" << RESET;
+
+        cout << BCYAN << LOG_SEP << "\n" << RESET;
+        printf(LOG_HDR,
+            (BYELLOW + string("Waktu") + RESET).c_str(),
+            (BGREEN  + string("Nama") + RESET).c_str(),
+            (BMAGENTA+ string("Role") + RESET).c_str(),
+            (BWHITE  + string("Status") + RESET).c_str());
+        cout << BCYAN << LOG_SEP << "\n" << RESET;
+
         string baris; int ada = 0;
         while (getline(f, baris)) {
             string kolom[4]; int k = 0; string tmp = "";
@@ -187,18 +197,26 @@ void tampilRiwayatLogin() {
                 else tmp += baris[i];
             }
             kolom[k] = tmp;
+            if ((int)kolom[1].size() > 17) kolom[1] = kolom[1].substr(0, 14) + "...";
+            if ((int)kolom[2].size() > 12) kolom[2] = kolom[2].substr(0, 9)  + "...";
             string sc = (kolom[3].find("BERHASIL") != string::npos) ? BGREEN : BRED;
-            cout << BCYAN << "| " << RESET << left << setw(20) << kolom[0]
-                 << BCYAN << "| " << RESET << setw(16) << kolom[1]
-                 << BCYAN << "| " << BMAGENTA << setw(11) << kolom[2]
-                 << BCYAN << "| " << sc << setw(9) << kolom[3]
+            cout << BCYAN << "| " << RESET
+                 << left << setw(20) << kolom[0]
+                 << BCYAN << " | " << RESET
+                 << setw(17) << kolom[1]
+                 << BCYAN << " | " << BMAGENTA
+                 << setw(12) << kolom[2]
+                 << BCYAN << " | " << sc
+                 << setw(9) << kolom[3]
                  << BCYAN << "|\n" << RESET;
             ada = 1;
         }
-        if (!ada)
-            cout << BCYAN << "|         " << BYELLOW << "(belum ada riwayat login)"
-                 << BCYAN << "                      |\n";
-        cout << BCYAN << "+---------------------+-----------------+------------+----------+\n" << RESET;
+        if (!ada) {
+            cout << BCYAN << "| " << BYELLOW
+                 << left << setw(58) << "(belum ada riwayat login)"
+                 << BCYAN << "|\n" << RESET;
+        }
+        cout << BCYAN << LOG_SEP << "\n" << RESET;
         f.close();
     } catch (const runtime_error& e) {
         cout << BRED << "  [!] " << e.what() << RESET << "\n";
@@ -209,8 +227,7 @@ void menuAdmin(string namaUser);
 void menuPelanggan(string namaUser);
 int  doLogin(Pengguna* data, int jml);
 
-// ===================== UTILITAS =====================
-
+// HELPER ATAU TOOLS
 string angkaKeStr(long long n) {
     if (n == 0) return "0";
     string s = "";
@@ -235,9 +252,26 @@ int validAngka(string s) {
     return 1;
 }
 
+// VALIDASI BARU
+// Cek apakah string mengandung angka
+bool containsDigit(const string& s) {
+    for (char c : s) {
+        if (isdigit(c)) return true;
+    }
+    return false;
+}
+
+// Cek apakah string mengandung huruf
+bool containsLetter(const string& s) {
+    for (char c : s) {
+        if (isalpha(c)) return true;
+    }
+    return false;
+}
+
 int bacaAngka(string s) {
     if (s.empty()) throw invalid_argument("Input tidak boleh kosong.");
-    if (!validAngka(s)) throw invalid_argument("Input harus berupa angka positif.");
+    if (!validAngka(s)) throw invalid_argument("Input harus berupa angka positif (tanpa huruf).");
     int hasil = 0;
     for (int i = 0; i < (int)s.size(); i++) hasil = hasil * 10 + (s[i] - '0');
     return hasil;
@@ -245,25 +279,58 @@ int bacaAngka(string s) {
 
 double bacaHarga(string s) {
     if (s.empty()) throw invalid_argument("Harga tidak boleh kosong.");
-    if (!validAngka(s)) throw invalid_argument("Harga harus berupa angka positif.");
+    if (!validAngka(s)) throw invalid_argument("Harga harus berupa angka positif (tanpa huruf).");
     double h = 0;
     for (int i = 0; i < (int)s.size(); i++) h = h * 10 + (s[i] - '0');
     if (h <= 0) throw out_of_range("Harga harus lebih dari 0.");
     return h;
 }
 
-// ===================== TAMPILAN TABEL PRODUK =====================
-// Lebar tabel: 4+26+12+14+5+13 + border = 82
+void cetakHargaKolom(string harga, int w) {
+    int pad = w - (int)harga.size();
+    if (pad < 0) pad = 0;
+    cout << BHARGA;
+    for (int i = 0; i < pad; i++) cout << " ";
+    cout << harga << RESET;
+}
 
+// TABEL PRODUK 
 void cetakHeaderTabel() {
-    cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n";
-    cout << "| " << BYELLOW << "No " << BCYAN
-         << "| " << BGREEN  << "Nama Produk          " << BCYAN
-         << "| " << BMAGENTA<< "Merk      " << BCYAN
-         << "| " << BRED    << "Harga          " << BCYAN
-         << "| " << BWHITE  << "Stok" << BCYAN
-         << "| " << BBLUE   << "Jenis       " << BCYAN << "|\n";
-    cout << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+    cout << BCYAN << "+-----+-------------------------+-------------+-----------------+-------+---------------+\n";
+    cout << "| " << BYELLOW   << left  << setw(3)  << "No"
+         << BCYAN << " | " << BGREEN   << left  << setw(23) << "Nama Produk"
+         << BCYAN << " | " << BMAGENTA << left  << setw(11) << "Merk"
+         << BCYAN << " | " << BHARGA   << right << setw(15) << "Harga"  
+         << BCYAN << " | " << BWHITE   << left  << setw(5)  << "Stok"
+         << BCYAN << " | " << BBLUE    << left  << setw(13) << "Jenis"
+         << BCYAN << " |\n";
+    cout << "+-----+-------------------------+-------------+-----------------+-------+---------------+\n" << RESET;
+}
+
+void cetakBarisProdukTabel(int no, Produk &p) {
+    string nama = p.nama;
+    if ((int)nama.size() > 23) nama = nama.substr(0, 20) + "...";
+    string merk = p.merk;
+    if ((int)merk.size() > 11) merk = merk.substr(0, 8) + "...";
+    string jenis = p.jenis;
+    if ((int)jenis.size() > 13) jenis = jenis.substr(0, 10) + "...";
+    string harga = rupiahFormat(p.harga.satuan);
+    if ((int)harga.size() > 15) harga = harga.substr(0, 12) + "...";
+
+string sc = (p.stok.jumlah <= 10) ? BRED : BGREEN;
+
+    cout << BCYAN << "| " << BYELLOW   << left  << setw(3)  << no
+         << BCYAN << " | " << BWHITE   << left  << setw(23) << nama
+         << BCYAN << " | " << BMAGENTA << left  << setw(11) << merk
+         << BCYAN << " | ";
+    cetakHargaKolom(harga, 15);  
+    cout << BCYAN << " | " << sc       << left  << setw(5)  << p.stok.jumlah
+         << BCYAN << " | " << BBLUE    << left  << setw(13) << jenis
+         << BCYAN << " |\n" << RESET;
+}
+
+void cetakFooterTabel() {
+    cout << BCYAN << "+-----+-------------------------+-------------+-----------------+-------+---------------+\n" << RESET;
 }
 
 int tampilTabel(int stockOnly) {
@@ -273,28 +340,18 @@ int tampilTabel(int stockOnly) {
         if (daftarProduk[i].aktif == 0) continue;
         if (stockOnly == 1 && daftarProduk[i].stok.jumlah == 0) continue;
         no++;
-        string nama = daftarProduk[i].nama;
-        if ((int)nama.size() > 21) nama = nama.substr(0, 18) + "...";
-        string merk = daftarProduk[i].merk;
-        if ((int)merk.size() > 9) merk = merk.substr(0, 7) + "..";
-        string sc = (daftarProduk[i].stok.jumlah <= 10) ? BRED : BGREEN;
-        cout << BCYAN << "| " << BYELLOW << left << setw(3) << no
-             << BCYAN << "| " << BWHITE  << setw(21) << nama
-             << BCYAN << "| " << BMAGENTA<< setw(9)  << merk
-             << BCYAN << "| " << BRED    << setw(14) << rupiahFormat(daftarProduk[i].harga.satuan)
-             << BCYAN << "| " << sc      << setw(4)  << daftarProduk[i].stok.jumlah
-             << BCYAN << "| " << BBLUE   << setw(12) << daftarProduk[i].jenis
-             << BCYAN << "|\n" << RESET;
+        cetakBarisProdukTabel(no, daftarProduk[i]);
         adaData = 1;
     }
-    if (!adaData)
-        cout << BCYAN << "|        " << BYELLOW << "(belum ada data produk)"
-             << BCYAN << "                              |\n";
-    cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+    if (!adaData) {
+        cout << BCYAN << "|  " << BYELLOW << left << setw(86) << "(belum ada data produk)"
+             << BCYAN << "|\n" << RESET;
+    }
+    cetakFooterTabel();
     return no;
 }
 
-// ===================== SORTING =====================
+// SORTING
 
 void selectionSortHargaAsc(Produk arr[], int n) {
     for (int i = 0; i < n - 1; i++) {
@@ -326,21 +383,8 @@ void tampilDenganSorting(int mode) {
     else if (mode == 2) selectionSortHargaAsc(tmp, jml);
     else if (mode == 3) insertionSortStokAsc(tmp, jml);
     cetakHeaderTabel();
-    for (int i = 0; i < jml; i++) {
-        string nama = tmp[i].nama;
-        if ((int)nama.size() > 21) nama = nama.substr(0, 18) + "...";
-        string merk = tmp[i].merk;
-        if ((int)merk.size() > 9) merk = merk.substr(0, 7) + "..";
-        string sc = (tmp[i].stok.jumlah <= 10) ? BRED : BGREEN;
-        cout << BCYAN << "| " << BYELLOW << left << setw(3) << (i+1)
-             << BCYAN << "| " << BWHITE  << setw(21) << nama
-             << BCYAN << "| " << BMAGENTA<< setw(9)  << merk
-             << BCYAN << "| " << BRED    << setw(14) << rupiahFormat(tmp[i].harga.satuan)
-             << BCYAN << "| " << sc      << setw(4)  << tmp[i].stok.jumlah
-             << BCYAN << "| " << BBLUE   << setw(12) << tmp[i].jenis
-             << BCYAN << "|\n" << RESET;
-    }
-    cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+    for (int i = 0; i < jml; i++) cetakBarisProdukTabel(i + 1, tmp[i]);
+    cetakFooterTabel();
 }
 
 int pilihNomor(string aksi) {
@@ -362,20 +406,46 @@ int pilihNomor(string aksi) {
     return -1;
 }
 
-// ===================== FITUR ADMIN =====================
+// FITUR ADMIN
 
 void tambahProduk() {
     cetakHeader("TAMBAH PRODUK BARU", BGREEN);
     if (totalProduk >= MAKS_PRODUK) { cout << BRED << "  [!] Data produk sudah penuh!\n" << RESET; return; }
     try {
         Produk p; string hargaStr, stokStr;
-        cout << BCYAN << "  Nama produk : " << BWHITE; getline(cin, p.nama);
-        cout << BCYAN << "  Merk        : " << BWHITE; getline(cin, p.merk);
-        cout << BCYAN << "  Harga (Rp)  : " << BYELLOW; getline(cin, hargaStr);
-        cout << BCYAN << "  Stok        : " << BWHITE; getline(cin, stokStr);
-        cout << BCYAN << "  Jenis       : " << BBLUE; getline(cin, p.jenis); cout << RESET;
-        if (p.nama.empty() || p.merk.empty() || p.jenis.empty())
-            throw invalid_argument("Nama, merk, dan jenis tidak boleh kosong.");
+        
+// Input Nama - tidak boleh ada angka
+        cout << BCYAN << "  Nama produk : " << BWHITE; 
+        getline(cin, p.nama);
+        if (p.nama.empty()) throw invalid_argument("Nama produk tidak boleh kosong.");
+        if (containsDigit(p.nama)) throw invalid_argument("Nama produk tidak boleh mengandung angka!");
+        
+// Input Merk - tidak boleh ada angka
+        cout << BCYAN << "  Merk : " << BWHITE; 
+        getline(cin, p.merk);
+        if (p.merk.empty()) throw invalid_argument("Merk tidak boleh kosong.");
+        if (containsDigit(p.merk)) throw invalid_argument("Merk tidak boleh mengandung angka!");
+        
+// Input Harga - harus angka
+        cout << BCYAN << "  Harga (Rp) : " << BHARGA; 
+        getline(cin, hargaStr);
+        if (hargaStr.empty()) throw invalid_argument("Harga tidak boleh kosong.");
+        if (containsLetter(hargaStr)) throw invalid_argument("Harga harus berupa angka, tidak boleh ada huruf!");
+        
+// Input Stok - harus angka
+        cout << BCYAN << "  Stok : " << BWHITE; 
+        getline(cin, stokStr);
+        if (stokStr.empty()) throw invalid_argument("Stok tidak boleh kosong.");
+        if (containsLetter(stokStr)) throw invalid_argument("Stok harus berupa angka, tidak boleh ada huruf!");
+        
+// Input Jenis - tidak boleh ada angka
+        cout << BCYAN << "  Jenis       : " << BBLUE; 
+        getline(cin, p.jenis); 
+        cout << RESET;
+        if (p.jenis.empty()) throw invalid_argument("Jenis tidak boleh kosong.");
+        if (containsDigit(p.jenis)) throw invalid_argument("Jenis tidak boleh mengandung angka!");
+        
+// Konversi dan simpan
         p.harga.satuan = bacaHarga(hargaStr);
         p.harga.matauang = "IDR";
         p.stok.jumlah = bacaAngka(stokStr);
@@ -395,16 +465,45 @@ void editProduk() {
         Produk &p = daftarProduk[idx];
         cout << BYELLOW << "\n  Edit produk (Enter = tidak berubah)\n" << RESET;
         string nb, mb, hb, sb, jb;
-        cout << BCYAN << "  Nama  [" << BWHITE << p.nama << BCYAN << "]: " << BWHITE; getline(cin, nb);
-        if (!nb.empty()) p.nama = nb;
-        cout << BCYAN << "  Merk  [" << BMAGENTA << p.merk << BCYAN << "]: " << BWHITE; getline(cin, mb);
-        if (!mb.empty()) p.merk = mb;
-        cout << BCYAN << "  Harga [" << BRED << rupiahFormat(p.harga.satuan) << BCYAN << "]: " << BYELLOW; getline(cin, hb);
-        if (!hb.empty()) { try { p.harga.satuan = bacaHarga(hb); } catch(const exception& e) { cout << BRED << "  [!] Harga tidak diubah.\n" << RESET; } }
-        cout << BCYAN << "  Stok  [" << BGREEN << p.stok.jumlah << BCYAN << "]: " << BWHITE; getline(cin, sb);
-        if (!sb.empty()) { try { p.stok.jumlah = bacaAngka(sb); } catch(const exception& e) { cout << BRED << "  [!] Stok tidak diubah.\n" << RESET; } }
-        cout << BCYAN << "  Jenis [" << BBLUE << p.jenis << BCYAN << "]: " << BWHITE; getline(cin, jb); cout << RESET;
-        if (!jb.empty()) p.jenis = jb;
+        
+        cout << BCYAN << "  Nama  [" << BWHITE   << p.nama << BCYAN << "]: " << BWHITE; 
+        getline(cin, nb);
+        if (!nb.empty()) {
+            if (containsDigit(nb)) throw invalid_argument("Nama tidak boleh mengandung angka!");
+            p.nama = nb;
+        }
+        
+        cout << BCYAN << "  Merk  [" << BMAGENTA << p.merk << BCYAN << "]: " << BWHITE; 
+        getline(cin, mb);
+        if (!mb.empty()) {
+            if (containsDigit(mb)) throw invalid_argument("Merk tidak boleh mengandung angka!");
+            p.merk = mb;
+        }
+        
+        cout << BCYAN << "  Harga [" << BHARGA   << rupiahFormat(p.harga.satuan) << BCYAN << "]: " << BHARGA; 
+        getline(cin, hb);
+        if (!hb.empty()) { 
+            if (containsLetter(hb)) throw invalid_argument("Harga harus berupa angka!");
+            try { p.harga.satuan = bacaHarga(hb); } 
+            catch(const exception& e) { cout << BRED << "  [!] Harga tidak diubah.\n" << RESET; } 
+        }
+        
+        cout << BCYAN << "  Stok  [" << BGREEN   << p.stok.jumlah << BCYAN << "]: " << BWHITE; 
+        getline(cin, sb);
+        if (!sb.empty()) { 
+            if (containsLetter(sb)) throw invalid_argument("Stok harus berupa angka!");
+            try { p.stok.jumlah = bacaAngka(sb); } 
+            catch(const exception& e) { cout << BRED << "  [!] Stok tidak diubah.\n" << RESET; } 
+        }
+        
+        cout << BCYAN << "  Jenis [" << BBLUE    << p.jenis << BCYAN << "]: " << BWHITE; 
+        getline(cin, jb); 
+        cout << RESET;
+        if (!jb.empty()) {
+            if (containsDigit(jb)) throw invalid_argument("Jenis tidak boleh mengandung angka!");
+            p.jenis = jb;
+        }
+        
         cout << BGREEN << "  [OK] Data berhasil diupdate!\n" << RESET;
     } catch (const exception& e) { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
 }
@@ -432,56 +531,58 @@ void hapusProduk() {
     } catch (const runtime_error& e) { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
 }
 
-// ===================== FITUR PELANGGAN =====================
-
+// FITUR PELANGGAN
 void cariNama() {
     cetakHeader("CARI PRODUK BY JENIS", BCYAN);
     int jml = 0;
     for (int i = 0; i < totalProduk; i++) if (daftarProduk[i].aktif) jml++;
     if (jml == 0) { cout << BYELLOW << "  Belum ada produk.\n" << RESET; return; }
+    cout << BCYAN << "  Jenis tersedia : " << RESET;
+    cout << BMAGENTA << "Serum" << RESET << ", " << BMAGENTA << "Toner" << RESET << ", "
+         << BMAGENTA << "Moisturizer" << RESET << ", " << BMAGENTA << "Face Wash" << RESET << ", "
+         << BMAGENTA << "Sunscreen" << RESET << "\n";
+    cout << BCYAN << "  (ketik " << BYELLOW << "semua" << BCYAN << " untuk tampilkan semua jenis)\n" << RESET;
     cout << "\n";
-    cout << BMAGENTA << "  [1]" << BWHITE << " Serum        " << BMAGENTA << "[2]" << BWHITE << " Toner\n";
-    cout << BMAGENTA << "  [3]" << BWHITE << " Moisturizer  " << BMAGENTA << "[4]" << BWHITE << " Face Wash\n";
-    cout << BMAGENTA << "  [5]" << BWHITE << " Sunscreen    " << BMAGENTA << "[6]" << BWHITE << " Cleanser\n";
-    cout << BMAGENTA << "  [7]" << BWHITE << " Mask         " << BMAGENTA << "[8]" << BWHITE << " Semua Jenis\n" << RESET;
-    cout << "\n" << BGREEN << "  Pilih: " << BYELLOW;
     try {
-        string pil; getline(cin, pil); cout << RESET;
-        string keyword = "";
-        if      (pil=="1") keyword="serum";
-        else if (pil=="2") keyword="toner";
-        else if (pil=="3") keyword="moisturizer";
-        else if (pil=="4") keyword="face wash";
-        else if (pil=="5") keyword="sunscreen";
-        else if (pil=="6") keyword="cleanser";
-        else if (pil=="7") keyword="mask";
-        else if (pil=="8") keyword="";
-        else throw invalid_argument("Pilih angka 1-8.");
+        string keyword;
+        cout << BGREEN << "  Cari jenis skincare: " << BYELLOW;
+        getline(cin, keyword); cout << RESET;
+        if (keyword.empty()) throw invalid_argument("Input tidak boleh kosong.");
+        string kwLower = keyword;
+        for (int i = 0; i < (int)kwLower.size(); i++) kwLower[i] = tolower(kwLower[i]);
+        bool cariSemua = (kwLower == "semua");
         cetakHeaderTabel();
         int ketemu = 0;
         for (int i = 0; i < totalProduk; i++) {
             if (!daftarProduk[i].aktif) continue;
-            string jp = daftarProduk[i].jenis;
-            for (int j = 0; j < (int)jp.size(); j++) jp[j] = tolower(jp[j]);
-            if (keyword != "" && jp != keyword) continue;
+            string jpLower = daftarProduk[i].jenis;
+            for (int j = 0; j < (int)jpLower.size(); j++) jpLower[j] = tolower(jpLower[j]);
+            bool cocok = cariSemua || (jpLower.find(kwLower) != string::npos);
+            if (!cocok) continue;
             ketemu++;
-            string nama = daftarProduk[i].nama;
-            if ((int)nama.size() > 21) nama = nama.substr(0, 18) + "...";
-            string merk = daftarProduk[i].merk;
-            if ((int)merk.size() > 9) merk = merk.substr(0, 7) + "..";
-            cout << BCYAN << "| " << BYELLOW << left << setw(3) << ketemu
-                 << BCYAN << "| " << BWHITE  << setw(21) << nama
-                 << BCYAN << "| " << BMAGENTA<< setw(9)  << merk
-                 << BCYAN << "| " << BRED    << setw(14) << rupiahFormat(daftarProduk[i].harga.satuan)
-                 << BCYAN << "| " << BGREEN  << setw(4)  << daftarProduk[i].stok.jumlah
-                 << BCYAN << "| " << BBLUE   << setw(12) << daftarProduk[i].jenis
-                 << BCYAN << "|\n" << RESET;
+            cetakBarisProdukTabel(ketemu, daftarProduk[i]);
         }
-        if (ketemu == 0)
-            cout << BCYAN << "|     " << BYELLOW << "(tidak ada produk untuk jenis ini)"
-                 << BCYAN << "                 |\n";
-        cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
-        if (ketemu > 0) cout << BGREEN << "  [OK] Ditemukan " << ketemu << " produk.\n" << RESET;
+        if (ketemu == 0) {
+            cout << BCYAN << "|  " << BRED << left << setw(86)
+                 << ("(tidak ada produk untuk jenis \"" + keyword + "\")")
+                 << BCYAN << "|\n" << RESET;
+            cetakFooterTabel();
+            cout << BYELLOW << "\n  Mungkin maksud kamu salah satu ini:\n" << RESET;
+            string jenisUnik[20]; int jmlJenis = 0;
+            for (int i = 0; i < totalProduk; i++) {
+                if (!daftarProduk[i].aktif) continue;
+                bool sudahAda = false;
+                for (int j = 0; j < jmlJenis; j++)
+                    if (jenisUnik[j] == daftarProduk[i].jenis) { sudahAda = true; break; }
+                if (!sudahAda) jenisUnik[jmlJenis++] = daftarProduk[i].jenis;
+            }
+            for (int i = 0; i < jmlJenis; i++)
+                cout << BMAGENTA << "    -> " << BWHITE << jenisUnik[i] << "\n" << RESET;
+        } else {
+            cetakFooterTabel();
+            cout << BGREEN << "  [OK] Ditemukan " << ketemu << " produk untuk jenis \""
+                 << keyword << "\".\n" << RESET;
+        }
     } catch (const invalid_argument& e) { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
 }
 
@@ -493,7 +594,7 @@ void cariHarga() {
     selectionSortHargaAsc(tmp, jml);
     try {
         string inp;
-        cout << BGREEN << "  Masukkan harga (Rp): " << BYELLOW;
+        cout << BGREEN << "  Masukkan harga (Rp): " << BHARGA;
         getline(cin, inp); cout << RESET;
         double target = bacaHarga(inp);
         int low = 0, high = jml - 1, posisi = -1;
@@ -503,18 +604,6 @@ void cariHarga() {
             else if (tmp[mid].harga.satuan < target) low = mid + 1;
             else high = mid - 1;
         }
-        auto cetakBarisProduk = [](Produk &p, int no) {
-            string nama = p.nama; if ((int)nama.size()>21) nama=nama.substr(0,18)+"...";
-            string merk = p.merk; if ((int)merk.size()>9)  merk=merk.substr(0,7)+"..";
-            string sc = (p.stok.jumlah<=10)?BRED:BGREEN;
-            cout << BCYAN << "| " << BYELLOW << left << setw(3) << no
-                 << BCYAN << "| " << BWHITE  << setw(21) << nama
-                 << BCYAN << "| " << BMAGENTA<< setw(9)  << merk
-                 << BCYAN << "| " << BRED    << setw(14) << rupiahFormat(p.harga.satuan)
-                 << BCYAN << "| " << sc      << setw(4)  << p.stok.jumlah
-                 << BCYAN << "| " << BBLUE   << setw(12) << p.jenis
-                 << BCYAN << "|\n" << RESET;
-        };
         if (posisi == -1) {
             cout << BRED << "  Harga " << rupiahFormat(target) << " tidak ada.\n" << RESET;
             double selMin = -1, hTerdekat = 0;
@@ -522,29 +611,28 @@ void cariHarga() {
                 double s = tmp[i].harga.satuan - target; if (s<0) s=-s;
                 if (selMin<0||s<selMin) { selMin=s; hTerdekat=tmp[i].harga.satuan; }
             }
-            cout << BYELLOW << "  Produk harga terdekat (" << rupiahFormat(hTerdekat) << "):\n" << RESET;
+            cout << BYELLOW << "  Produk harga terdekat (" << BHARGA << rupiahFormat(hTerdekat) << BYELLOW << "):\n" << RESET;
             cetakHeaderTabel();
             int no = 0;
             for (int i = 0; i < jml; i++)
-                if (tmp[i].harga.satuan == hTerdekat) cetakBarisProduk(tmp[i], ++no);
+                if (tmp[i].harga.satuan == hTerdekat) cetakBarisProdukTabel(++no, tmp[i]);
         } else {
             cetakHeaderTabel();
             int no = 0;
             for (int i = 0; i < jml; i++)
-                if (tmp[i].harga.satuan == target) cetakBarisProduk(tmp[i], ++no);
+                if (tmp[i].harga.satuan == target) cetakBarisProdukTabel(++no, tmp[i]);
             cout << BGREEN << "  [OK] Ditemukan " << no << " produk.\n" << RESET;
         }
-        cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+        cetakFooterTabel();
     } catch (const invalid_argument& e) { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
     catch (const out_of_range& e)       { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
 }
 
-// ===================== MENU KELOLA PRODUK =====================
-
+// MENU LIHAT PRODUK
 void menuKelolaLihatProduk() {
     string p;
     while (true) {
-        cetakHeader("KELOLA TAMPILAN PRODUK", BCYAN);
+        cetakHeader("TAMPILAN PRODUK", BCYAN);
         cout << BYELLOW << "  -- Lihat --\n" << RESET;
         cout << BMAGENTA << "  [1]" << BWHITE << " Semua Produk (Default)\n" << RESET;
         cout << BYELLOW << "  -- Urutkan --\n" << RESET;
@@ -568,32 +656,39 @@ void menuKelolaLihatProduk() {
     }
 }
 
-// ===================== KERANJANG BELANJA =====================
-
+// KERANJANG BELANJA
 void tampilKeranjang(ItemKeranjang keranjang[], int jmlKeranjang) {
     cetakHeader("KERANJANG BELANJA", BMAGENTA);
-    cout << BMAGENTA << "+----+--------------------+-----+---------------+---------------+\n";
-    cout << "| " << BYELLOW << "No " << BMAGENTA
-         << "| " << BGREEN  << "Nama Produk        " << BMAGENTA
-         << "| " << BCYAN   << "Qty " << BMAGENTA
-         << "| " << BRED    << "Harga Satuan  " << BMAGENTA
-         << "| " << BWHITE  << "Subtotal      " << BMAGENTA << "|\n";
-    cout << "+----+--------------------+-----+---------------+---------------+\n" << RESET;
+    cout << BMAGENTA << "+-----+----------------------+-------+-----------------+-----------------+\n";
+    cout << "| " << BYELLOW  << left  << setw(3)  << "No"
+         << BMAGENTA << " | " << BGREEN   << left  << setw(20) << "Nama Produk"
+         << BMAGENTA << " | " << BCYAN    << right << setw(5)  << "Qty"
+         << BMAGENTA << " | " << BHARGA   << right << setw(15) << "Harga Satuan"   
+         << BMAGENTA << " | " << BGREEN   << right << setw(15) << "Subtotal"      
+         << BMAGENTA << " |\n";
+    cout << "+-----+----------------------+-------+-----------------+-----------------+\n" << RESET;
+
     double grandTotal = 0;
     for (int i = 0; i < jmlKeranjang; i++) {
         Produk &p = daftarProduk[keranjang[i].idxProduk];
         double sub = p.harga.satuan * keranjang[i].jumlah;
         grandTotal += sub;
-        string nama = p.nama; if ((int)nama.size()>19) nama=nama.substr(0,16)+"...";
-        cout << BMAGENTA << "| " << BYELLOW << left << setw(3) << (i+1)
-             << BMAGENTA << "| " << BWHITE  << setw(19) << nama
-             << BMAGENTA << "| " << BCYAN   << setw(4)  << keranjang[i].jumlah
-             << BMAGENTA << "| " << BRED    << setw(14) << rupiahFormat(p.harga.satuan)
-             << BMAGENTA << "| " << BGREEN  << setw(14) << rupiahFormat(sub)
-             << BMAGENTA << "|\n" << RESET;
+        string nama = p.nama;
+        if ((int)nama.size() > 20) nama = nama.substr(0, 17) + "...";
+        string hargaStr = rupiahFormat(p.harga.satuan);
+        if ((int)hargaStr.size() > 15) hargaStr = hargaStr.substr(0, 12) + "...";
+        string subStr = rupiahFormat(sub);
+        if ((int)subStr.size() > 15) subStr = subStr.substr(0, 12) + "...";
+
+        cout << BMAGENTA << "| " << BYELLOW  << left  << setw(3)  << (i + 1)
+             << BMAGENTA << " | " << BWHITE   << left  << setw(20) << nama
+             << BMAGENTA << " | " << BCYAN    << right << setw(5)  << keranjang[i].jumlah
+             << BMAGENTA << " | " << BHARGA   << right << setw(15) << hargaStr    
+             << BMAGENTA << " | " << BGREEN   << right << setw(15) << subStr     
+             << BMAGENTA << " |\n" << RESET;
     }
-    cout << BMAGENTA << "+----+--------------------+-----+---------------+---------------+\n" << RESET;
-    cout << BOLD << BWHITE << "  TOTAL: " << BGREEN << rupiahFormat(grandTotal) << RESET << "\n";
+    cout << BMAGENTA << "+-----+----------------------+-------+-----------------+-----------------+\n" << RESET;
+    cout << BOLD << BWHITE << "  TOTAL: " << BHARGA << rupiahFormat(grandTotal) << RESET << "\n";
     cetakGaris(BMAGENTA);
 }
 
@@ -626,22 +721,16 @@ int tampilProdukMerk(string merk, int peta[], int modeSort) {
     if      (modeSort==1) cout << BCYAN << "  [Urutan: Nama Z -> A]\n" << RESET;
     else if (modeSort==2) cout << BCYAN << "  [Urutan: Harga Termurah]\n" << RESET;
     else if (modeSort==3) cout << BCYAN << "  [Urutan: Stok Sedikit]\n" << RESET;
-    cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+    cetakHeaderTabel();
     for (int i = 0; i < jml; i++) {
         peta[i] = idxAsli[i];
-        string nama = tmp[i].nama; if ((int)nama.size()>21) nama=nama.substr(0,18)+"...";
-        string merk2= tmp[i].merk; if ((int)merk2.size()>9) merk2=merk2.substr(0,7)+"..";
-        string sc = (tmp[i].stok.jumlah<=10)?BRED:BGREEN;
-        cout << BCYAN << "| " << BYELLOW << left << setw(3) << (i+1)
-             << BCYAN << "| " << BWHITE  << setw(21) << nama
-             << BCYAN << "| " << BMAGENTA<< setw(9)  << merk2
-             << BCYAN << "| " << BRED    << setw(14) << rupiahFormat(tmp[i].harga.satuan)
-             << BCYAN << "| " << sc      << setw(4)  << tmp[i].stok.jumlah
-             << BCYAN << "| " << BBLUE   << setw(12) << tmp[i].jenis
+        cetakBarisProdukTabel(i + 1, tmp[i]);
+    }
+    if (jml == 0) {
+        cout << BCYAN << "|  " << BYELLOW << left << setw(86) << "(belum ada produk untuk merk ini)"
              << BCYAN << "|\n" << RESET;
     }
-    if (jml==0) cout << BCYAN << "|     " << BYELLOW << "(belum ada produk untuk merk ini)" << BCYAN << "                 |\n";
-    cout << BCYAN << "+----+----------------------+----------+---------------+-----+-------------+\n" << RESET;
+    cetakFooterTabel();
     return jml;
 }
 
@@ -686,9 +775,26 @@ void tambahKeKeranjangDariMerk(ItemKeranjang keranjang[], int &jmlKeranjang, int
         for (int i=0;i<jmlKeranjang;i++) if(keranjang[i].idxProduk==idx){keranjang[i].jumlah+=jml;ada=1;break;}
         if (!ada) {keranjang[jmlKeranjang].idxProduk=idx; keranjang[jmlKeranjang].jumlah=jml; jmlKeranjang++;}
         cout << BGREEN << "  [OK] " << p.nama << " x" << jml << " masuk keranjang!\n" << RESET;
-    } catch (const length_error& e)     { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
+    } catch (const length_error& e)    { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
     catch (const invalid_argument& e)  { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
     catch (const out_of_range& e)      { cout << BRED << "  [!] " << e.what() << RESET << "\n"; }
+}
+
+// STRUK BELANJA
+#define STRUK_W      62
+#define STRUK_INNER  60
+#define STRUK_SEP    "+------------------------------------------------------------+"
+#define STRUK_ITEM_W 24   // lebar kolom nama produk di struk
+#define STRUK_QTY_W   5   // lebar kolom qty
+#define STRUK_SUB_W  16   // lebar kolom subtotal 
+
+void cetakStrukBaris(string label, string value, string labelColor, string valueColor) {
+    int valueW = STRUK_INNER - 4 - 16;  // 4 = "| " + " |", 16 = label(14) + ": "
+    cout << BCYAN << "| " << RESET
+         << labelColor << left << setw(14) << label << RESET
+         << BCYAN << ": " << RESET
+         << valueColor << left << setw(valueW) << value << RESET
+         << BCYAN << " |\n" << RESET;
 }
 
 void prosesCheckout(ItemKeranjang keranjang[], int &jmlKeranjang, string namaUser) {
@@ -716,7 +822,7 @@ void prosesCheckout(ItemKeranjang keranjang[], int &jmlKeranjang, string namaUse
             total += daftarProduk[keranjang[i].idxProduk].harga.satuan * keranjang[i].jumlah;
         if (pm=="1") {
             metode="Tunai"; string ib;
-            cout << BGREEN << "  Jumlah bayar (Rp): " << BYELLOW; getline(cin, ib); cout << RESET;
+            cout << BGREEN << "  Jumlah bayar (Rp): " << BHARGA; getline(cin, ib); cout << RESET;
             bayar = bacaHarga(ib);
             if (bayar<total) throw runtime_error("Uang kurang " + rupiahFormat(total-bayar) + "!");
             kembali=bayar-total; adaKembali=1; status="LUNAS";
@@ -726,39 +832,142 @@ void prosesCheckout(ItemKeranjang keranjang[], int &jmlKeranjang, string namaUse
         else throw invalid_argument("Metode tidak valid.");
         for (int i=0;i<jmlKeranjang;i++)
             kurangiStok(&daftarProduk[keranjang[i].idxProduk].stok.jumlah, keranjang[i].jumlah);
+
         string wt = getWaktuSekarang(), nt = generateNoTransaksi();
-        cetakHeader("STRUK PEMBELIAN - GLOW UP STORE", BGREEN);
-        cout << BCYAN << "  No. Transaksi : " << BWHITE << nt << "\n";
-        cout << BCYAN << "  Waktu         : " << BWHITE << wt << "\n";
-        cout << BCYAN << "  Pelanggan     : " << BMAGENTA << namaUser << "\n" << RESET;
-        cetakGarisTipis(BGREEN);
+
+// CETAK STRUK
+        cout << "\n";
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
+        {
+            string judul = "STRUK PEMBELIAN - GLOW UP STORE";
+            int pad = (STRUK_INNER - (int)judul.size()) / 2;
+            int padR = STRUK_INNER - (int)judul.size() - pad;
+            cout << BGREEN << "|";
+            for(int i=0;i<pad;i++) cout<<" ";
+            cout << BOLD << BWHITE << judul << RESET << BGREEN;
+            for(int i=0;i<padR;i++) cout<<" ";
+            cout << "|\n" << RESET;
+        }
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
+        cetakStrukBaris("No. Transaksi", nt,       BCYAN,    BWHITE);
+        cetakStrukBaris("Waktu",         wt,       BCYAN,    BWHITE);
+        cetakStrukBaris("Pelanggan",     namaUser, BCYAN,    BMAGENTA);
+
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
+        #define SW_NAMA 28
+        #define SW_QTY   5
+        #define SW_SUB  17
+
+        cout << BCYAN << "+";
+        for(int i=0;i<SW_NAMA+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_QTY+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_SUB+2;i++) cout<<"-";
+        cout << "+\n" << RESET;
+
+        {
+            string hP="Produk", hQ="Qty", hS="Subtotal";
+            int pPL=(SW_NAMA-(int)hP.size())/2, pPR=SW_NAMA-(int)hP.size()-pPL;
+            int pQL=(SW_QTY-(int)hQ.size())/2,  pQR=SW_QTY-(int)hQ.size()-pQL;
+            int pSL=(SW_SUB-(int)hS.size())/2,  pSR=SW_SUB-(int)hS.size()-pSL;
+            cout << BCYAN << "| " << BGREEN;
+            for(int i=0;i<pPL;i++) cout<<" ";
+            cout<<hP;
+            for(int i=0;i<pPR;i++) cout<<" ";
+            cout << BCYAN << " | " << BYELLOW;
+            for(int i=0;i<pQL;i++) cout<<" ";
+            cout<<hQ;
+            for(int i=0;i<pQR;i++) cout<<" ";
+            cout << BCYAN << " | " << BHARGA;    
+            for(int i=0;i<pSL;i++) cout<<" ";
+            cout<<hS;
+            for(int i=0;i<pSR;i++) cout<<" ";
+            cout << BCYAN << " |\n" << RESET;
+        }
+        cout << BCYAN << "+";
+        for(int i=0;i<SW_NAMA+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_QTY+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_SUB+2;i++) cout<<"-";
+        cout << "+\n" << RESET;
+
+        int totalQty = 0;
         for (int i=0;i<jmlKeranjang;i++) {
             Produk &p=daftarProduk[keranjang[i].idxProduk];
             double sub=p.harga.satuan*keranjang[i].jumlah;
-            string nama=p.nama; if((int)nama.size()>20) nama=nama.substr(0,17)+"...";
-            cout << "  " << BWHITE << left << setw(20) << nama
-                 << BYELLOW << " x" << setw(3) << keranjang[i].jumlah
-                 << BGREEN  << setw(14) << rupiahFormat(sub) << "\n" << RESET;
+            totalQty += keranjang[i].jumlah;
+            string nama=p.nama;
+            if((int)nama.size()>SW_NAMA) nama=nama.substr(0,SW_NAMA-3)+"...";
+            string subStr=rupiahFormat(sub);
+            if((int)subStr.size()>SW_SUB) subStr=subStr.substr(0,SW_SUB-3)+"...";
+
+            cout << BCYAN << "| " << RESET
+                 << BWHITE << left  << setw(SW_NAMA) << nama  << RESET
+                 << BCYAN << " | " << RESET
+                 << BYELLOW << right << setw(SW_QTY)  << keranjang[i].jumlah << RESET
+                 << BCYAN << " | " << RESET
+                 << BHARGA << right << setw(SW_SUB)  << subStr << RESET   
+                 << BCYAN << " |\n" << RESET;
         }
-        cetakGarisTipis(BGREEN);
-        cout << BOLD << BWHITE << "  TOTAL         : " << BGREEN << rupiahFormat(total) << "\n" << RESET;
+        cout << BCYAN << "+";
+        for(int i=0;i<SW_NAMA+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_QTY+2;i++) cout<<"-";
+        cout << "+";
+        for(int i=0;i<SW_SUB+2;i++) cout<<"-";
+        cout << "+\n" << RESET;
+        {
+            string totalStr = rupiahFormat(total);
+            if((int)totalStr.size()>SW_SUB) totalStr=totalStr.substr(0,SW_SUB-3)+"...";
+            cout << BCYAN << "| " << RESET
+                 << BOLD << BWHITE  << left  << setw(SW_NAMA) << "TOTAL" << RESET
+                 << BCYAN << " | " << RESET
+                 << BOLD << BYELLOW << right << setw(SW_QTY)  << totalQty << RESET
+                 << BCYAN << " | " << RESET
+                 << BOLD << BHARGA  << right << setw(SW_SUB)  << totalStr << RESET   
+                 << BCYAN << " |\n" << RESET;
+        }
+
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
+// Dibayar & Kembalian (hanya tunai) 
         if (adaKembali) {
-            cout << BCYAN << "  Dibayar       : " << BWHITE << rupiahFormat(bayar) << "\n";
-            cout << BCYAN << "  Kembalian     : " << BYELLOW << rupiahFormat(kembali) << "\n" << RESET;
+            string bayarStr   = rupiahFormat(bayar);
+            string kembaliStr = rupiahFormat(kembali);
+            cetakStrukBaris("Dibayar",   bayarStr,   BCYAN, BHARGA);   
+            cetakStrukBaris("Kembalian", kembaliStr, BCYAN, BGREEN); 
+            cout << BGREEN << STRUK_SEP << "\n" << RESET;
         }
-        cetakGarisTipis(BGREEN);
-        cout << BCYAN << "  Metode        : " << BMAGENTA << metode << "\n";
-        cout << BCYAN << "  Status        : " << BGREEN << status << "\n" << RESET;
-        cetakGaris(BGREEN);
-        cout << BOLD << BMAGENTA << "  Makasih udah belanja! Semoga cocok :)\n" << RESET;
-        cetakGaris(BGREEN);
+
+        cetakStrukBaris("Metode", metode, BCYAN, BMAGENTA);
+        cetakStrukBaris("Status", status, BCYAN, BGREEN);
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
+// Pesan penutup tengah
+        {
+            string pesan = "Makasih udah belanja! Semoga cocok :)";
+            int pad  = (STRUK_INNER - (int)pesan.size()) / 2;
+            int padR = STRUK_INNER - (int)pesan.size() - pad;
+            cout << BGREEN << "|";
+            for(int i=0;i<pad;i++) cout<<" ";
+            cout << BOLD << BMAGENTA << pesan << RESET << BGREEN;
+            for(int i=0;i<padR;i++) cout<<" ";
+            cout << "|\n" << RESET;
+        }
+        cout << BGREEN << STRUK_SEP << "\n" << RESET;
+
         jmlKeranjang=0;
     } catch (const invalid_argument& e) { cout << BRED << "  [!] " << e.what() << "\n  Checkout dibatalkan.\n" << RESET; }
     catch (const runtime_error& e)      { cout << BRED << "  [!] " << e.what() << "\n  Checkout dibatalkan.\n" << RESET; }
     catch (const out_of_range& e)       { cout << BRED << "  [!] " << e.what() << "\n  Checkout dibatalkan.\n" << RESET; }
 }
 
-// ===================== MENU MERK + KERANJANG =====================
+// MENU MERK + KERANJANG 
 
 void menuMerkDanKeranjang(string namaUser) {
     ItemKeranjang keranjang[50]; int jmlKeranjang=0;
@@ -784,7 +993,6 @@ void menuMerkDanKeranjang(string namaUser) {
         cout << BMAGENTA << "  [6]" << BWHITE << " Lihat keranjang\n";
         cout << BMAGENTA << "  [7]" << BWHITE << " Hapus item\n";
         cout << BMAGENTA << "  [8]" << BWHITE << " Checkout\n";
-        cout << BMAGENTA << "  [9]" << BWHITE << " Ganti urutan\n" << RESET;
         cout << BRED     << "  [0]" << BWHITE << " Kembali\n" << RESET;
         cetakGaris(BMAGENTA);
         cout << BGREEN << "  Pilih: " << BYELLOW; getline(cin, p); cout << RESET;
@@ -836,18 +1044,13 @@ void menuMerkDanKeranjang(string namaUser) {
             continue;
         }
         if (p=="8") { prosesCheckout(keranjang, jmlKeranjang, namaUser); continue; }
-        if (p=="9") {
-            int sb=menuSortingPelanggan(); if (sb==-1) continue;
-            modeSort=sb;
-            if (!merkAktif.empty()) noProduk=tampilProdukMerk(merkAktif, peta, modeSort);
-            continue;
-        }
+
         if (p=="0") return;
         cout << BRED << "  [!] Pilihan tidak valid!\n" << RESET;
     }
 }
 
-// ===================== LOGIN & REGISTER =====================
+// LOGIN & REGISTER
 
 void doRegister() {
     if (jumlahPengguna>=MAKS_PENGGUNA) { cout << BRED << "  [!] Slot pengguna penuh!\n" << RESET; return; }
@@ -883,7 +1086,7 @@ int doLogin(Pengguna* data, int jml) {
                 cout << BGREEN << "\n  [OK] Login berhasil! Halo, " << BMAGENTA << data[idx].nama << BGREEN << "!\n" << RESET;
                 simpanRiwayatLogin(data[idx].nama, data[idx].role, "BERHASIL");
                 if (data[idx].role=="admin") menuAdmin(data[idx].nama);
-                else                          menuPelanggan(data[idx].nama);
+                else menuPelanggan(data[idx].nama);
                 return 1;
             }
             coba++;
@@ -899,7 +1102,7 @@ int doLogin(Pengguna* data, int jml) {
     return 0;
 }
 
-// ===================== MENU ADMIN & PELANGGAN =====================
+// MENU ADMIN & PELANGGAN
 
 void menuAdmin(string namaUser) {
     string p;
@@ -909,7 +1112,7 @@ void menuAdmin(string namaUser) {
         cout << BMAGENTA << "  [1]" << BWHITE << " Tambah Produk\n";
         cout << BMAGENTA << "  [2]" << BWHITE << " Edit Produk\n";
         cout << BMAGENTA << "  [3]" << BWHITE << " Hapus Produk\n";
-        cout << BMAGENTA << "  [4]" << BWHITE << " Kelola Produk\n";
+        cout << BMAGENTA << "  [4]" << BWHITE << " Lihat Produk\n";
         cout << BMAGENTA << "  [5]" << BWHITE << " Riwayat Login\n" << RESET;
         cout << BRED     << "  [0]" << BWHITE << " Logout\n" << RESET;
         cetakGaris(BYELLOW);
@@ -941,7 +1144,7 @@ void menuPelanggan(string namaUser) {
     }
 }
 
-// ===================== MAIN =====================
+// MAIN
 
 int main() {
     loadPengguna();
@@ -953,37 +1156,41 @@ int main() {
     if (!adminAda) dataPengguna[jumlahPengguna++]={"admin","123","admin",1};
     if (!tamuAda)  dataPengguna[jumlahPengguna++]={"Tamu","000","pelanggan",1};
 
+// ===== WARDAH =====
     daftarProduk[totalProduk++]={"Lightening Serum",       "Wardah",   {55000, "IDR"},{40,"pcs"},"Serum",      1};
-    daftarProduk[totalProduk++]={"UV Shield Sunscreen",    "Wardah",   {48000, "IDR"},{35,"pcs"},"Sunscreen",  1};
     daftarProduk[totalProduk++]={"Hydrating Toner",        "Wardah",   {38000, "IDR"},{30,"pcs"},"Toner",      1};
-    daftarProduk[totalProduk++]={"Face Wash Aloe",         "Wardah",   {30000, "IDR"},{25,"pcs"},"Face Wash",  1};
     daftarProduk[totalProduk++]={"Daily Moisturizer",      "Wardah",   {52000, "IDR"},{20,"pcs"},"Moisturizer",1};
+    daftarProduk[totalProduk++]={"Face Wash Aloe",         "Wardah",   {30000, "IDR"},{25,"pcs"},"Face Wash",  1};
+    daftarProduk[totalProduk++]={"UV Shield Sunscreen",    "Wardah",   {48000, "IDR"},{35,"pcs"},"Sunscreen",  1};
+// ===== GLAD2GLOW =====
     daftarProduk[totalProduk++]={"Brightening Serum",      "Glad2Glow",{62000, "IDR"},{25,"pcs"},"Serum",      1};
     daftarProduk[totalProduk++]={"Exfo Toner AHA BHA",     "Glad2Glow",{57000, "IDR"},{20,"pcs"},"Toner",      1};
     daftarProduk[totalProduk++]={"Moisturizer Gel",        "Glad2Glow",{45000, "IDR"},{30,"pcs"},"Moisturizer",1};
     daftarProduk[totalProduk++]={"Gentle Face Wash",       "Glad2Glow",{35000, "IDR"},{20,"pcs"},"Face Wash",  1};
-    daftarProduk[totalProduk++]={"Hydra Moisturizer",      "Glad2Glow",{50000, "IDR"},{18,"pcs"},"Moisturizer",1};
-    daftarProduk[totalProduk++]={"Sun Protection SPF30",   "Emina",    {40000, "IDR"},{50,"pcs"},"Sunscreen",  1};
-    daftarProduk[totalProduk++]={"Bright Stuff Toner",     "Emina",    {35000, "IDR"},{45,"pcs"},"Toner",      1};
+    daftarProduk[totalProduk++]={"Daily Sun Protect SPF35","Glad2Glow",{53000, "IDR"},{22,"pcs"},"Sunscreen",  1};
+// ===== EMINA =====
     daftarProduk[totalProduk++]={"Acne Care Serum",        "Emina",    {42000, "IDR"},{28,"pcs"},"Serum",      1};
-    daftarProduk[totalProduk++]={"Bright Stuff Face Wash", "Emina",    {28000, "IDR"},{40,"pcs"},"Face Wash",  1};
+    daftarProduk[totalProduk++]={"Bright Stuff Toner",     "Emina",    {35000, "IDR"},{45,"pcs"},"Toner",      1};
     daftarProduk[totalProduk++]={"Ms Pimple Moisturizer",  "Emina",    {36000, "IDR"},{30,"pcs"},"Moisturizer",1};
-    daftarProduk[totalProduk++]={"Hyalucera Moisturizer",  "Originote",{75000, "IDR"},{22,"pcs"},"Moisturizer",1};
-    daftarProduk[totalProduk++]={"Ceramide Cleanser",      "Originote",{68000, "IDR"},{18,"pcs"},"Cleanser",   1};
+    daftarProduk[totalProduk++]={"Bright Stuff Face Wash", "Emina",    {28000, "IDR"},{40,"pcs"},"Face Wash",  1};
+    daftarProduk[totalProduk++]={"Sun Protection SPF30",   "Emina",    {40000, "IDR"},{50,"pcs"},"Sunscreen",  1};
+ // ===== ORIGINOTE =====
     daftarProduk[totalProduk++]={"Niacinamide Serum",      "Originote",{72000, "IDR"},{20,"pcs"},"Serum",      1};
-    daftarProduk[totalProduk++]={"Mild Cleanser Face Wash","Originote",{60000, "IDR"},{15,"pcs"},"Face Wash",  1};
-    daftarProduk[totalProduk++]={"Barrier Moisturizer",    "Originote",{80000, "IDR"},{12,"pcs"},"Moisturizer",1};
-    daftarProduk[totalProduk++]={"5x Ceramide Barrier",    "Skintific",{115000,"IDR"},{15,"pcs"},"Moisturizer",1};
+    daftarProduk[totalProduk++]={"Hyal Toner Essence",     "Originote",{65000, "IDR"},{18,"pcs"},"Toner",      1};
+    daftarProduk[totalProduk++]={"Hyalucera Moisturizer",  "Originote",{75000, "IDR"},{22,"pcs"},"Moisturizer",1};
+    daftarProduk[totalProduk++]={"Mild Cleanser FaceWash", "Originote",{60000, "IDR"},{15,"pcs"},"Face Wash",  1};
+    daftarProduk[totalProduk++]={"UV Barrier Sunscreen",   "Originote",{78000, "IDR"},{16,"pcs"},"Sunscreen",  1};
+// ===== SKINTIFIC =====
     daftarProduk[totalProduk++]={"SymWhite Serum",         "Skintific",{125000,"IDR"},{12,"pcs"},"Serum",      1};
-    daftarProduk[totalProduk++]={"Mugwort Clay Mask",      "Skintific",{98000, "IDR"},{18,"pcs"},"Mask",       1};
+    daftarProduk[totalProduk++]={"AHA BHA PHA Toner",      "Skintific",{105000,"IDR"},{14,"pcs"},"Toner",      1};
+    daftarProduk[totalProduk++]={"5x Ceramide Barrier",    "Skintific",{115000,"IDR"},{15,"pcs"},"Moisturizer",1};
     daftarProduk[totalProduk++]={"Acne Facial Wash",       "Skintific",{95000, "IDR"},{14,"pcs"},"Face Wash",  1};
-    daftarProduk[totalProduk++]={"Ceramide Moisturizer",   "Skintific",{120000,"IDR"},{10,"pcs"},"Moisturizer",1};
+    daftarProduk[totalProduk++]={"AMPM Sunscreen SPF50",   "Skintific",{110000,"IDR"},{13,"pcs"},"Sunscreen",  1};
 
-    // ===== SPLASH SCREEN =====
     cout << "\n";
     cetakGaris(BMAGENTA);
-    cout << BG_MAGENTA << BOLD << BWHITE << "|     SELAMAT DATANG DI GLOW UP STORE!       |" << RESET << "\n";
-    cout << BG_MAGENTA << BOLD << BWHITE << "|       Toko Skincare Terpercaya No.1        |" << RESET << "\n";
+    cetakTengah(BG_MAGENTA, BWHITE, "SELAMAT DATANG DI GLOW UP STORE!");
+    cetakTengah(BG_MAGENTA, BWHITE, "Toko Skincare Terpercaya No.1");
     cetakGaris(BMAGENTA);
     cout << "\n";
 
@@ -999,7 +1206,7 @@ int main() {
         else if (pilihan=="2") { if (doLogin(dataPengguna, jumlahPengguna)==0) berjalan=0; }
         else if (pilihan=="0") {
             cetakGaris(BMAGENTA);
-            cout << BG_MAGENTA << BOLD << BWHITE << "|   Terima kasih! Sampai jumpa di Glow Up!   |" << RESET << "\n";
+            cetakTengah(BG_MAGENTA, BWHITE, "Terima kasih! Keep Glowing Bestie!");
             cetakGaris(BMAGENTA);
             berjalan=0;
         }

@@ -1,4 +1,4 @@
-3
+5
 admin
 123
 admin
@@ -8,6 +8,14 @@ Tamu
 pelanggan
 1
 rafa
+104
+pelanggan
+1
+dapa
+100
+pelanggan
+1
+meme
 104
 pelanggan
 1
